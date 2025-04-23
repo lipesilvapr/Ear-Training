@@ -1,48 +1,25 @@
-import React, {useEffect, useState} from 'react';
-import {View, Text, StyleSheet, TouchableOpacity} from 'react-native';
-import {SafeAreaView} from 'react-native-safe-area-context';
-import Sound from 'react-native-sound';
+// src/pages/FreeAreaPage.tsx
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import colors from '../../global/colors';
 import Header from '../../components/header/Header';
-
-const NOTES = [
-  {name: 'Dó', file: 'do_sound'},
-  {name: 'Ré', file: 're_sound'},
-  {name: 'Mi', file: 'mi_sound'},
-  {name: 'Fá', file: 'fa_sound'},
-  {name: 'Sol', file: 'sol_sound'},
-  {name: 'Lá', file: 'la_sound'},
-  {name: 'Si', file: 'si_sound'},
-];
+import { getSound, getAllNotes, loadSounds } from '../../global/soundManager';
 
 const FreeAreaPage = () => {
-  const [sounds, setSounds] = useState<{[key: string]: Sound | null}>({});
+  const [isLoaded, setIsLoaded] = useState(false);
+  const NOTES = getAllNotes();
 
   useEffect(() => {
-    const loadedSounds: {[key: string]: Sound} = {};
-
-    NOTES.forEach(note => {
-      const audio = new Sound(note.file, Sound.MAIN_BUNDLE, error => {
-        if (error) {
-          console.log(`Erro ao carregar ${note.name}:`, error);
-          return;
-        }
-        loadedSounds[note.file] = audio;
-      });
+    loadSounds().then(() => {
+      setIsLoaded(true);
     });
-
-    setSounds(loadedSounds);
-
-    return () => {
-      Object.values(loadedSounds).forEach(sound => sound?.release());
-    };
   }, []);
 
   const playSound = (file: string) => {
-    const sound = sounds[file];
+    const sound = getSound(file);
     if (sound) {
-      sound.setCurrentTime(0); // Reinicia o som para tocar do início
-      console.log(`Tocando ${file}...`);
+      sound.setCurrentTime(0);
       sound.setVolume(1.0);
       sound.play(success => {
         if (success) {
@@ -62,7 +39,7 @@ const FreeAreaPage = () => {
       <View style={styles.content}>
         <Text style={styles.description}>Toque uma das notas abaixo:</Text>
         <View style={styles.buttonsContainer}>
-          {NOTES.map(note => (
+          {isLoaded && NOTES.map(note => (
             <TouchableOpacity
               key={note.file}
               style={styles.button}
@@ -101,7 +78,7 @@ const styles = StyleSheet.create({
     width: 100,
     marginBottom: 10,
   },
-  buttonsContainer:{
+  buttonsContainer: {
     flexWrap: 'wrap',
     flexDirection: 'row',
     justifyContent: 'center',
